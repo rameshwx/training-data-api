@@ -180,7 +180,7 @@ export function buildApp({ db, config }) {
         const quoteResult = await client.query(
           `insert into order_quotes
              (grocery_item_id, quantity, unit_price_cents, total_cents, available_quantity)
-           values ($1, $2, $3, $3 * $2, $4)
+           values ($1, $2, $3, $3::integer * $2::integer, $4)
            returning id as quote_id, grocery_item_id as item_id, quantity,
                      available_quantity, unit_price_cents, total_cents, expires_at`,
           [itemId, quantity, item.price_cents, item.quantity_available],
