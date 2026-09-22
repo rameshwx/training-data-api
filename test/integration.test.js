@@ -52,7 +52,7 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
     headers,
     payload: JSON.stringify({ p_item_id: '10000000-0000-0000-0000-000000000002', p_quantity: 1 }),
   });
-  assert.equal(quote.statusCode, 200);
+  assert.equal(quote.statusCode, 200, quote.body);
   const quoteRow = quote.json()[0];
   assert.equal(quoteRow.item_name, 'Cavendish Bananas');
 
@@ -66,7 +66,7 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
       p_delivery_address: '42 Palm Grove, Colombo 3',
     }),
   });
-  assert.equal(order.statusCode, 200);
+  assert.equal(order.statusCode, 200, order.body);
   assert.equal(order.json()[0].status, 'pending_dispatch');
 
   const duplicate = await app.inject({
