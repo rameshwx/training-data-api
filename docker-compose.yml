@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-training_data}
+      POSTGRES_USER: ${PGUSER:-training_data}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+    volumes:
+      - training_data_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - training_data
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 8080
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://train.uxi.asia}
+      API_KEY: ${API_KEY}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${PGDATABASE:-training_data}
+      PGUSER: ${PGUSER:-training_data}
+      PGPASSWORD: ${PGPASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - training_data
+
+volumes:
+  training_data_pgdata:
+
+networks:
+  training_data:
+    driver: bridge
