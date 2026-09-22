@@ -10,7 +10,7 @@ const enabled = Boolean(process.env.TEST_DATABASE_URL || process.env.DATABASE_UR
 test('database snapshot and quote-to-order workflow', { skip: !enabled }, async (t) => {
   const config = getConfig({
     ...process.env,
-    NODE_ENV: 'test',
+    NODE_ENV: 'integration',
     DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
     API_KEY: 'integration-api-key-with-more-than-20-chars',
     PUBLIC_BASE_URL: 'http://integration.local',
@@ -52,6 +52,7 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
     headers,
     payload: JSON.stringify({ p_item_id: '10000000-0000-0000-0000-000000000002', p_quantity: 1 }),
   });
+  if (quote.statusCode !== 200) console.error(`quote response: ${quote.body}`);
   assert.equal(quote.statusCode, 200, quote.body);
   const quoteRow = quote.json()[0];
   assert.equal(quoteRow.item_name, 'Cavendish Bananas');
