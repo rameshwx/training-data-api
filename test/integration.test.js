@@ -37,6 +37,13 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
     categories: '4', items: '12', inventory: '12', riders: '5', orders: '4', quotes: '3',
   });
 
+  const inventoryBaseline = await db.query(`
+    select count(*) as item_count,
+           count(*) filter (where quantity_available = 100000) as baseline_count
+    from inventory
+  `);
+  assert.deepEqual(inventoryBaseline.rows[0], { item_count: '12', baseline_count: '12' });
+
   const catalog = await app.inject({
     method: 'GET',
     url: '/rest/v1/grocery_catalog?select=id,name,image_url&is_active=eq.true',
@@ -55,6 +62,7 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
   assert.equal(quote.statusCode, 200, quote.body);
   const quoteRow = quote.json()[0];
   assert.equal(quoteRow.item_name, 'Cavendish Bananas');
+  assert.equal(quoteRow.available_quantity, 100000);
 
   const order = await app.inject({
     method: 'POST',
@@ -68,6 +76,12 @@ test('database snapshot and quote-to-order workflow', { skip: !enabled }, async 
   });
   assert.equal(order.statusCode, 200, order.body);
   assert.equal(order.json()[0].status, 'pending_dispatch');
+
+  const remainingInventory = await db.query(
+    'select quantity_available from inventory where grocery_item_id = $1',
+    [quoteRow.item_id],
+  );
+  assert.equal(remainingInventory.rows[0].quantity_available, 99999);
 
   const duplicate = await app.inject({
     method: 'POST',
